@@ -1,7 +1,7 @@
 import os
 from io import StringIO
 from pathlib import Path
-from typing import List, Tuple, Union, Optional, TextIO
+from typing import List, Tuple, Union, Optional, TextIO, Type
 
 from .frontmatter import split_front_matter_and_markup
 from .formats import get_filename_format
@@ -80,6 +80,30 @@ class Markup:
             filename=filename,
         )
 
+    def get_front_matter_value(self, key: str, default=None, type_check: Optional[Type] = None):
+        """
+        Return a value from the markups front-matter, if present.
+
+        Note that **any** present front-matter value will override the default, even None
+
+        :param key: str, The key
+        :param default: any default value if the key is not present in front-matter
+        :param type_check: optional type that the front-matter value should have
+            Otherwise an exception is thrown
+
+        :return: front-matter value or default value
+        """
+        if self.front_matter and key in self.front_matter:
+            value = self.front_matter[key]
+            if type_check is not None:
+                if not isinstance(value, type_check):
+                    raise TypeError(
+                        f"Expected type '{type_check.__name__}' for front-matter value '{key}'"
+                        f", got '{type(value).__name__}'"
+                    )
+            return value
+        return default
+
     def markup(self, context: Optional[dict] = None, env: Optional[Environment] = None) -> str:
         if self._markup is None:
             if "{%" not in self.markup_template and "{{" not in self.markup_template:
@@ -118,5 +142,4 @@ class Markup:
         template = env.jinja_env().from_string(
             source=self.markup_template,
         )
-        print("RC", context)
         self._markup = template.render(**context)

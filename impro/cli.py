@@ -38,6 +38,8 @@ def main(
         page = Page.from_markdown(input[0])
         print(page.markup.front_matter)
         print("----")
+        print(page.elements)
+        print("----")
         print(page.to_html())
         #print(json.dumps(page.to_ast(), indent=2))
 
