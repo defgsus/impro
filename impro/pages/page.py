@@ -2,9 +2,6 @@ import os
 from pathlib import Path
 from typing import List, Tuple, Union, Optional, TextIO
 
-from jinja2 import Template
-
-from .frontmatter import split_front_matter_and_markup
 from .formats import get_filename_format
 from ..environment import Environment
 from .markup import Markup
@@ -32,14 +29,20 @@ class Page:
                     raise TypeError(f"front-matter 'context' must be of type dict, got '{type(ctx).__name__}'")
                 self.context.update(ctx)
 
+    @property
+    def title(self) -> str:
+        title = None
+        if self.markup.front_matter:
+            title = self.markup.front_matter.get("title")
+        return title or ""
+
     @classmethod
     def from_markdown(
             cls,
             file: Union[str, os.PathLike, TextIO],
             env: Optional[Environment] = None,
     ) -> "Page":
-        markup = Markup.from_markdown(file, env=env)
-        return Page(markup, env=env)
+        return cls.from_file(file, format="md", env=env)
 
     @classmethod
     def from_file(
@@ -60,11 +63,21 @@ class Page:
                 self._env = Environment()
 
             if self.markup.filename:
-                self._env.add_search_path(self.markup.filename.parent, front=True)
+                self._env.add_search_path(self.markup.filename.parent)
 
             # TODO: update from front-matter
 
         return self._env
 
     def to_html(self) -> str:
-        return self.markup.to_html(self.context, self.env)
+        if self.markup.format == "md":
+            html_body = self.markup.to_html(self.context, self.env)
+            markup = Markup.from_file(self.env.html_default_layout, format="html", env=self.env)
+            context = self.context.copy()
+            context.setdefault("html", {})
+            context["html"].setdefault("body", html_body)
+            context["html"].setdefault("title", self.title)
+
+            return markup.to_html(context=context, env=self.env)
+        else:
+            raise NotImplementedError(self.markup.format)

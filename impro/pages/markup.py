@@ -1,4 +1,5 @@
 import os
+from io import StringIO
 from pathlib import Path
 from typing import List, Tuple, Union, Optional, TextIO
 
@@ -27,8 +28,18 @@ class Markup:
             cls,
             file: Union[str, os.PathLike, TextIO],
             env: Optional[Environment] = None,
-    ) -> "Page":
+    ) -> "Markup":
         return cls.from_file(file, format="md", env=env)
+
+    @classmethod
+    def from_string(
+            cls,
+            markup: str,
+            format: Optional[str] = None,
+            env: Optional[Environment] = None,
+    ) -> "Markup":
+        fp = StringIO(markup)
+        return cls.from_file(fp, format=format, env=env)
 
     @classmethod
     def from_file(
@@ -36,7 +47,7 @@ class Markup:
             file: Union[str, os.PathLike, TextIO],
             format: Optional[str] = None,
             env: Optional[Environment] = None,
-    ) -> "Page":
+    ) -> "Markup":
         # read from stream
         if hasattr(file, "read"):
             if not format:
@@ -50,7 +61,14 @@ class Markup:
                 format = get_filename_format(file)
                 if not format:
                     raise ValueError(f"Need to specify 'format', it can not be guessed from filename '{file}'")
-            filename = Path(file)
+
+            if env is None:
+                filename = Path(file)
+            else:
+                filename = env.find_file(file)
+                if not filename:
+                    raise IOError(f"Can not find '{file}'")
+
             text = filename.read_text()
 
         fm, markup = split_front_matter_and_markup(text)
@@ -71,12 +89,18 @@ class Markup:
         return self._markup
 
     def to_html(self, context: Optional[dict] = None, env: Optional[Environment] = None) -> str:
-        from marko import Markdown
-        from marko.html_renderer import HTMLRenderer
-        assert self.format == "md"
-        md = Markdown()
-        doc = md.parse(self.markup(context=context, env=env))
-        return HTMLRenderer().render(doc)
+        if self.format == "html":
+            return self.markup(context=context, env=env)
+
+        elif self.format == "md":
+            from marko import Markdown
+            from marko.html_renderer import HTMLRenderer
+            md = Markdown()
+            doc = md.parse(self.markup(context=context, env=env))
+            return HTMLRenderer().render(doc)
+
+        else:
+            raise NotImplementedError(self.format)
 
     def get_elements(self, context: Optional[dict] = None, env: Optional[Environment] = None) -> dict:
         from .md import Markdown, get_markdown_elements
@@ -94,4 +118,5 @@ class Markup:
         template = env.jinja_env().from_string(
             source=self.markup_template,
         )
+        print("RC", context)
         self._markup = template.render(**context)
