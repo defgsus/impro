@@ -1,11 +1,9 @@
 import os
-from pathlib import Path
-from typing import List, Tuple, Union, Optional, TextIO, Type
+from typing import List, Union, Optional, TextIO
 
-from .formats import get_filename_format
 from ..environment import Environment
 from .markup import Markup
-from .util import sluggify
+from impro.util import sluggify
 
 
 class Page:
@@ -17,6 +15,7 @@ class Page:
     ):
         self.markup = markup
         self._elements = None
+        self._files = None
         self._env = None
         self._env_default = env
 
@@ -108,6 +107,19 @@ class Page:
         if self._elements is None:
             self._elements = self.markup.get_elements(self.context, self.env)
         return self._elements
+
+    @property
+    def associated_files(self) -> List[dict]:
+        if self._files is None:
+            self._files = []
+            if self.elements.get("images"):
+                for i in self.elements["images"]:
+                    self._files.append({
+                        "type": "image",
+                        "external": "//" in i["src"],
+                        "path": i["src"],
+                    })
+        return self._files
 
     def to_md(self) -> str:
         if self.markup.format == "md":

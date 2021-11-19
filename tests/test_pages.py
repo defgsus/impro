@@ -77,13 +77,16 @@ This Is Sub!
         self.assertEqual("images-no-fm", page.slug)
         self.assertElements(page, "images", [
             {"title": "image 1", "src": "image1.png"},
-            {"title": "image 2", "src": "sub-path/image2.png"}
+            {"title": "image 2", "src": "./sub-path/image2.png"},
+            {"title": "image 3", "src": "http://subgenius.com/Graffix/dobbs.jpg"}
         ])
 
         self.assertEqual(
             """![image 1](image1.png)
 
-Here is ![image 2](sub-path/image2.png).
+Here is ![image 2](./sub-path/image2.png).
+
+![image 3](http://subgenius.com/Graffix/dobbs.jpg)
 """,
             page.to_md()
         )
