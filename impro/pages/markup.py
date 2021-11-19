@@ -110,6 +110,8 @@ class Markup:
                 self._markup = self.markup_template
             else:
                 self._render_template(context=context, env=env)
+            if not self._markup.endswith("\n"):
+                self._markup += "\n"
         return self._markup
 
     def to_html(self, context: Optional[dict] = None, env: Optional[Environment] = None) -> str:
