@@ -12,7 +12,7 @@ class Environment:
 
     def __init__(
             self,
-            search_paths: Optional[Iterable[Union[str, os.PathLike]]] = None,
+            search_paths: Optional[Iterable[Union[str, Path]]] = None,
             html_default_layout: str = "base.html",
     ):
         self.html_default_layout = html_default_layout
@@ -36,7 +36,7 @@ class Environment:
     def search_paths(self) -> List[Path]:
         return self._search_paths
 
-    def add_search_path(self, *path: Union[str, os.PathLike], back: bool = False):
+    def add_search_path(self, *path: Union[str, Path], back: bool = False):
         if back:
             for p in reversed(path):
                 self._search_paths.append(Path(p))

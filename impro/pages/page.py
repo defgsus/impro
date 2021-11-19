@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 from typing import List, Union, Optional, TextIO
 
 from ..environment import Environment
+from ..util import sluggify, join_path
 from .markup import Markup
-from impro.util import sluggify
 
 
 class Page:
@@ -72,7 +72,7 @@ class Page:
     @classmethod
     def from_markdown(
             cls,
-            file: Union[str, os.PathLike, TextIO],
+            file: Union[str, Path, TextIO],
             env: Optional[Environment] = None,
     ) -> "Page":
         return cls.from_file(file, format="md", env=env)
@@ -80,7 +80,7 @@ class Page:
     @classmethod
     def from_file(
             cls,
-            file: Union[str, os.PathLike, TextIO],
+            file: Union[str, Path, TextIO],
             format: Optional[str] = None,
             env: Optional[Environment] = None,
     ) -> "Page":
@@ -110,14 +110,24 @@ class Page:
 
     @property
     def associated_files(self) -> List[dict]:
+        root_path = "/"
+        if self.markup.filename:
+            root_path = self.markup.filename.resolve().parent
+
         if self._files is None:
             self._files = []
             if self.elements.get("images"):
                 for i in self.elements["images"]:
+                    external = "//" in i["src"]
+                    if external:
+                        abs_path = i["src"]
+                    else:
+                        abs_path = join_path(root_path, i["src"])
                     self._files.append({
                         "type": "image",
-                        "external": "//" in i["src"],
+                        "external": external,
                         "path": i["src"],
+                        "abs_path": abs_path,
                     })
         return self._files
 

@@ -1,5 +1,6 @@
 import os
-from typing import List, Tuple, Union, Optional, Type
+from pathlib import Path
+from typing import List, Tuple, Union, Optional, Type, Generator
 
 from .pages import Page
 from .util import join_path
@@ -54,26 +55,43 @@ class Site:
 
     def write_files(
             self,
-            root: Union[str, os.PathLike],
+            root: Union[str, Path],
             format: str,
             writer: Optional[Type[FileWriter]] = None,
     ) -> FileWriter:
-        assert format in ("md", "html")
-
         if writer is None:
-            writer = FileWriter(root)
+            writer = FileWriter(root=root)
         else:
-            writer = writer(root)
+            writer = writer(root=root)
 
-        for p in self._pages.values():
-            page = p["page"]
-            path = p["path"]
-            if not page.slug:
-                raise ValueError(f"Slug required for {page}")
-
-            filename = join_path(path, f"{page.slug}.{format}")
-            content = getattr(page, f"to_{format}")()
-
+        for filename, content in self.iter_files(format=format):
             writer.write(filename, content)
 
         return writer
+
+    def iter_files(
+            self,
+            format: str,
+    ) -> Generator[Tuple[Path, Union[str, bytes]], None, None]:
+        assert format in ("md", "html")
+
+        for p in self._pages.values():
+            page = p["page"]
+            page_path = p["path"]
+            if not page.slug:
+                raise ValueError(f"Slug required for {page}")
+
+            for file in page.associated_files:
+                if not file["external"]:
+                    file_path = file["path"]
+                    #real_path = join_path(page)
+
+            filename = f"{page.slug}.{format}"
+            if page_path:
+                filename = join_path(page_path, filename)
+
+            content = getattr(page, f"to_{format}")()
+
+            yield Path(filename), content
+
+

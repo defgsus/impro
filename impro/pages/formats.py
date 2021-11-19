@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from typing import Union, Optional
 
 
@@ -7,7 +7,7 @@ INPUT_FORMATS = (
 )
 
 
-def get_filename_format(filename: Union[str, os.PathLike]) -> Optional[str]:
+def get_filename_format(filename: Union[str, Path]) -> Optional[str]:
     fn = str(filename).lower()
     if fn.endswith(".md"):
         return "md"

@@ -15,7 +15,7 @@ class Markup:
             markup: str,
             format: str,
             front_matter: Optional[dict] = None,
-            filename: Optional[Union[str, os.PathLike]] = None,
+            filename: Optional[Union[str, Path]] = None,
     ):
         self.markup_template = markup
         self._markup: Optional[str] = None
@@ -26,7 +26,7 @@ class Markup:
     @classmethod
     def from_markdown(
             cls,
-            file: Union[str, os.PathLike, TextIO],
+            file: Union[str, Path, TextIO],
             env: Optional[Environment] = None,
     ) -> "Markup":
         return cls.from_file(file, format="md", env=env)
@@ -44,7 +44,7 @@ class Markup:
     @classmethod
     def from_file(
             cls,
-            file: Union[str, os.PathLike, TextIO],
+            file: Union[str, Path, TextIO],
             format: Optional[str] = None,
             env: Optional[Environment] = None,
     ) -> "Markup":

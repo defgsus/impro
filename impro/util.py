@@ -1,4 +1,6 @@
 import urllib.parse
+from pathlib import Path
+from typing import Union
 
 
 def sluggify(s: str) -> str:
@@ -20,7 +22,7 @@ def sluggify(s: str) -> str:
     return r
 
 
-def join_path(*paths: str) -> str:
+def join_path(*paths: Union[str, Path]) -> str:
     if len(paths) == 0:
         return ""
     elif len(paths) == 1:
@@ -28,7 +30,7 @@ def join_path(*paths: str) -> str:
     elif len(paths) > 2:
         return join_path(join_path(paths[0], paths[1]), *paths[2:])
 
-    root = paths[0]
+    root = str(paths[0])
     if root and not root.endswith("/"):
         root = root + "/"
-    return urllib.parse.urljoin(root, paths[1])
+    return urllib.parse.urljoin(root, str(paths[1]))

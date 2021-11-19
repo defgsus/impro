@@ -24,3 +24,20 @@ class TestSite(unittest.TestCase):
             },
             writer.files
         )
+        writer = site.write_files("/docs", "md", writer=MemoryWriter)
+        self.assertEqual(
+            {
+                Path('/docs/no-front-matter.md'): '# headline 1\n\nparagraph\n\n## headline 2\n\nA [weblink](https://targ.et).\n\nLink to [headline one](#headline-1)\n',
+                Path('/docs/the-slug.md'): '# headline 1\n\nparagraph\n\n## headline 2\n\nA [weblink](https://targ.et).\n\nLink to [headline one](#headline-1)\n'
+            },
+            writer.files
+        )
+
+    def test_site_writer_assets(self):
+        site = Site()
+        site.add_page(
+            Page.from_file(DATA_DIR / "images_no_fm.md"),
+            #Page.from_file(DATA_DIR / "front_matter.md"),
+        )
+        writer = site.write_files("/", "md", writer=MemoryWriter)
+        print(writer.files)
