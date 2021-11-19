@@ -37,7 +37,12 @@ class TestSite(unittest.TestCase):
         site = Site()
         site.add_page(
             Page.from_file(DATA_DIR / "images_no_fm.md"),
-            #Page.from_file(DATA_DIR / "front_matter.md"),
+            Page.from_file(DATA_DIR / "with_css.md"),
         )
         writer = site.write_files("/", "md", writer=MemoryWriter)
-        print(writer.files)
+        filenames = set(str(f) for f in writer.files.keys())
+        self.assertEqual(
+            {"/images-no-fm.md", "/with-css.md", "/style.css",
+             "/image1.png", "/sub-path/image2.png"},
+            filenames,
+        )

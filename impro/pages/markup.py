@@ -1,11 +1,13 @@
 import os
 from io import StringIO
 from pathlib import Path
+import warnings
 from typing import List, Tuple, Union, Optional, TextIO, Type, Dict
 
 from .frontmatter import split_front_matter_and_markup
 from .formats import get_filename_format
 from ..environment import Environment
+from .md import replace_markdown_element_links
 
 
 class Markup:
@@ -22,6 +24,9 @@ class Markup:
         self.format = format
         self.front_matter = front_matter
         self.filename: Optional[Path] = Path(filename) if filename is not None else None
+
+    def __str__(self):
+        return f"Markup({self.filename}, {self.format})"
 
     @classmethod
     def from_markdown(
@@ -120,8 +125,15 @@ class Markup:
 
         return self._markup
 
-    def to_html(self, context: Optional[dict] = None, env: Optional[Environment] = None) -> str:
+    def to_html(
+            self,
+            context: Optional[dict] = None,
+            env: Optional[Environment] = None,
+            link_mapping: Optional[Dict[str, str]] = None,
+    ) -> str:
         if self.format == "html":
+            if link_mapping:
+                warnings.warn(f"Can't handle link_mapping for html->html in {self}")
             return self.markup(context=context, env=env)
 
         elif self.format == "md":
@@ -129,6 +141,10 @@ class Markup:
             from marko.html_renderer import HTMLRenderer
             md = Markdown()
             doc = md.parse(self.markup(context=context, env=env))
+            if link_mapping:
+                replace_markdown_element_links(doc, link_mapping)
+                #return LinkReplaceHTMLRenderer(link_mapping).render(doc)
+            #else:
             return HTMLRenderer().render(doc)
 
         else:

@@ -13,7 +13,8 @@ class Site:
         self._pages = dict()
         self._files: Optional[List[dict]] = None
         self.file_type_path_mapping = {
-        #    "image": "images",
+            #"image": "images",
+            #"css": "css",
         }
 
     def add_page(self, *page: Page, path: Optional[str] = None):

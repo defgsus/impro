@@ -1,8 +1,8 @@
 import json
 import html
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 
-from marko import Markdown, Renderer, HTMLRenderer
+from marko import Markdown, Renderer, HTMLRenderer, inline
 
 
 def get_markdown_elements(element) -> dict:
@@ -13,6 +13,15 @@ def get_markdown_elements(element) -> dict:
         "headings": r.headings,
         "images": r.images,
     }
+
+
+def replace_markdown_element_links(element, link_mapping: Dict[str, str]):
+    if getattr(element, "dest", None) in link_mapping:
+        element.dest = link_mapping[element.dest]
+
+    if getattr(element, "children", None) and not isinstance(element, inline.RawText):
+        for children in element.children:
+            replace_markdown_element_links(children, link_mapping)
 
 
 def replace_markdown_links(markdown: str, mapping: dict) -> str:

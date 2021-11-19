@@ -111,34 +111,54 @@ class Page:
 
     @property
     def associated_files(self) -> List[dict]:
+        if self._files is None:
+            self._files = []
+            self._get_associated_files()
+
+        return self._files
+
+    def css_files(self) -> List[str]:
+        css = self.markup.get_front_matter_value("css")
+        if not css:
+            return []
+        if isinstance(css, str):
+            css = [css]
+        return css
+
+    def _get_associated_files(self):
         root_path = "/"
         if self.markup.filename:
             root_path = self.markup.filename.resolve().parent
 
         handled_path_set = set()
-        if self._files is None:
-            self._files = []
-            if self.elements.get("images"):
-                for i in self.elements["images"]:
-                    external = "//" in i["src"]
-                    if external:
-                        abs_path = i["src"]
-                    else:
-                        abs_path = join_path(root_path, i["src"])
 
-                    if abs_path in handled_path_set:
-                        continue
-                    handled_path_set.add(abs_path)
+        def _add_file(file_type, path):
+            external = "//" in path
+            if external:
+                abs_path = path
+            else:
+                abs_path = join_path(root_path, path)
 
-                    self._files.append({
-                        "type": "image",
-                        "external": external,
-                        "path": i["src"],
-                        "abs_path": abs_path,
-                    })
-        return self._files
+            if abs_path in handled_path_set:
+                return
 
-    def to_md(self, link_mapping: Optional[Dict[str, str]]) -> str:
+            handled_path_set.add(abs_path)
+
+            self._files.append({
+                "type": file_type,
+                "external": external,
+                "path": path,
+                "abs_path": abs_path,
+            })
+
+        if self.elements.get("images"):
+            for i in self.elements["images"]:
+                _add_file("image", i["src"])
+
+        for file in self.css_files():
+            _add_file("css", file)
+
+    def to_md(self, link_mapping: Optional[Dict[str, str]] = None) -> str:
         if self.markup.format == "md":
             markup = self.markup.markup(self.context, env=self.env)
             if link_mapping:
@@ -147,9 +167,9 @@ class Page:
         else:
             raise NotImplementedError(self.markup.format)
 
-    def to_html(self, link_mapping: Optional[Dict[str, str]]) -> str:
+    def to_html(self, link_mapping: Optional[Dict[str, str]] = None) -> str:
         if self.markup.format == "md":
-            html_body = self.markup.to_html(self.context, self.env)
+            html_body = self.markup.to_html(self.context, self.env, link_mapping=link_mapping)
             layout = self.layout("html")
             if not layout:
                 return html_body
@@ -160,8 +180,13 @@ class Page:
             context["html"].setdefault("body", html_body)
             context["html"].setdefault("title", self.title)
             context.setdefault("slug", self.slug)
+            if not context["html"].get("css"):
+                context["html"]["css"] = []
+            for file in self.css_files():
+                if link_mapping:
+                    file = link_mapping.get(file, file)
+                context["html"]["css"].append(file)
 
-            assert not link_mapping, "not implemented"
-            return markup.to_html(context=context, env=self.env)
+            return markup.to_html(context=context, env=self.env, link_mapping=link_mapping)
         else:
             raise NotImplementedError(self.markup.format)
