@@ -1,7 +1,7 @@
 import os
 from io import StringIO
 from pathlib import Path
-from typing import List, Tuple, Union, Optional, TextIO, Type
+from typing import List, Tuple, Union, Optional, TextIO, Type, Dict
 
 from .frontmatter import split_front_matter_and_markup
 from .formats import get_filename_format
@@ -104,14 +104,20 @@ class Markup:
             return value
         return default
 
-    def markup(self, context: Optional[dict] = None, env: Optional[Environment] = None) -> str:
+    def markup(
+            self,
+            context: Optional[dict] = None,
+            env: Optional[Environment] = None,
+    ) -> str:
         if self._markup is None:
             if "{%" not in self.markup_template and "{{" not in self.markup_template:
                 self._markup = self.markup_template
             else:
                 self._render_template(context=context, env=env)
+
             if not self._markup.endswith("\n"):
                 self._markup += "\n"
+
         return self._markup
 
     def to_html(self, context: Optional[dict] = None, env: Optional[Environment] = None) -> str:

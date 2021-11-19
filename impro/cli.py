@@ -1,5 +1,6 @@
 import argparse
 import json
+from pathlib import Path
 from typing import List, Type, Union, Optional
 
 from impro.pages.page import Page
@@ -19,8 +20,13 @@ def parse_args() -> dict:
         help="One or more inputs",
     )
     parser.add_argument(
-        "-o", "--output", type=str, default=None,
-        help="Output directory",
+        "-o", "--output", type=str, default="-",
+        help="Output directory, or '-' for stdout",
+    )
+    parser.add_argument(
+        "-f", "--format", type=str, default="md",
+        choices=["md", "html"],
+        help="Output format",
     )
 
     return vars(parser.parse_args())
@@ -30,6 +36,7 @@ def main(
         command: str,
         input: List[str],
         output: str,
+        format: str,
 ):
     if command == "info":
         for filename in input:
@@ -49,25 +56,34 @@ def main(
             print("Need to specify at least one input")
             exit(1)
 
-        page = Page.from_file(input[0])
-        print(page.markup.front_matter)
-        print("----")
-        print(page.elements)
-        print("----")
-        print(page.to_html())
-        #print(json.dumps(page.to_ast(), indent=2))
+        site = Site()
+        for filename in input:
+            page = Page.from_file(filename)
+            site.add_page(page, path="docs")
+
+        if output == "-":
+            for filename, content in site.iter_files(format=format):
+                print()
+                print("-"*32, filename, "-"*32)
+                if isinstance(content, bytes):
+                    print(len(content), "bytes")
+                else:
+                    print(content)
+
+        else:
+            output = Path(output).absolute()
+            site.write_files(root=output, format=format)
 
     elif command == "site-info":
         site = Site()
         for filename in input:
             page = Page.from_file(filename)
-            site.add_page(page)
+            site.add_page(page, path="docs")
 
         print(f"--- {site} ---")
-        if site.associated_files:
-            print("  files:")
-            for file in site.associated_files:
-                print(f'    ({file["type"]}) {file["path"]} {"(external)" if file["external"] else ""}')
+        print("  files:")
+        for filename, content in site.iter_files(format):
+            print(f'    {len(content):9d} {filename}')
 
     else:
         raise ValueError(f"Unknown command '{command}'")

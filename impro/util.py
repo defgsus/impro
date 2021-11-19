@@ -1,3 +1,4 @@
+import os
 import urllib.parse
 from pathlib import Path
 from typing import Union
@@ -34,3 +35,7 @@ def join_path(*paths: Union[str, Path]) -> str:
     if root and not root.endswith("/"):
         root = root + "/"
     return urllib.parse.urljoin(root, str(paths[1]))
+
+
+def relative_path(path: Union[str, Path], root: Union[str, Path]) -> str:
+    return os.path.relpath(str(path), str(root))

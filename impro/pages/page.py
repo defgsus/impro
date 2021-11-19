@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import List, Union, Optional, TextIO
+from typing import List, Union, Optional, TextIO, Dict
 
 from ..environment import Environment
 from ..util import sluggify, join_path
 from .markup import Markup
+from .md import replace_markdown_links
 
 
 class Page:
@@ -114,6 +115,7 @@ class Page:
         if self.markup.filename:
             root_path = self.markup.filename.resolve().parent
 
+        handled_path_set = set()
         if self._files is None:
             self._files = []
             if self.elements.get("images"):
@@ -123,6 +125,11 @@ class Page:
                         abs_path = i["src"]
                     else:
                         abs_path = join_path(root_path, i["src"])
+
+                    if abs_path in handled_path_set:
+                        continue
+                    handled_path_set.add(abs_path)
+
                     self._files.append({
                         "type": "image",
                         "external": external,
@@ -131,13 +138,16 @@ class Page:
                     })
         return self._files
 
-    def to_md(self) -> str:
+    def to_md(self, link_mapping: Optional[Dict[str, str]]) -> str:
         if self.markup.format == "md":
-            return self.markup.markup(self.context, self.env)
+            markup = self.markup.markup(self.context, env=self.env)
+            if link_mapping:
+                markup = replace_markdown_links(markup, link_mapping)
+            return markup
         else:
             raise NotImplementedError(self.markup.format)
 
-    def to_html(self) -> str:
+    def to_html(self, link_mapping: Optional[Dict[str, str]]) -> str:
         if self.markup.format == "md":
             html_body = self.markup.to_html(self.context, self.env)
             layout = self.layout("html")
@@ -151,6 +161,7 @@ class Page:
             context["html"].setdefault("title", self.title)
             context.setdefault("slug", self.slug)
 
+            assert not link_mapping, "not implemented"
             return markup.to_html(context=context, env=self.env)
         else:
             raise NotImplementedError(self.markup.format)

@@ -5,14 +5,21 @@ from typing import Tuple, Optional
 from marko import Markdown, Renderer, HTMLRenderer
 
 
-def get_markdown_elements(doc) -> dict:
+def get_markdown_elements(element) -> dict:
     r = ElementRenderer()
-    r.render(doc)
+    r.render(element)
     return {
         "links": sorted(r.links),
         "headings": r.headings,
         "images": r.images,
     }
+
+
+def replace_markdown_links(markdown: str, mapping: dict) -> str:
+    # TODO: Should actually use marko to rerender the markdown
+    for key, value in mapping.items():
+        markdown = markdown.replace(f"({key})", f"({value})")
+    return markdown
 
 
 class ElementRenderer(HTMLRenderer):
