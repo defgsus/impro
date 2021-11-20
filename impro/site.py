@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Tuple, Union, Optional, Type, Generator
+from typing import List, Tuple, Union, Optional, Type, Generator, Dict
 
 from .pages import Page
 from .util import join_path, relative_path
@@ -9,13 +9,13 @@ from .writer import FileWriter
 
 class Site:
 
-    def __init__(self):
+    def __init__(
+            self,
+            file_type_path_mapping: Optional[Dict[str, str]] = None,
+    ):
         self._pages = dict()
         self._files: Optional[List[dict]] = None
-        self.file_type_path_mapping = {
-            #"image": "images",
-            #"css": "css",
-        }
+        self.file_type_path_mapping = file_type_path_mapping or dict()
 
     def add_page(self, *page: Page, path: Optional[str] = None):
         for page in page:
@@ -79,7 +79,9 @@ class Site:
     ) -> Generator[Tuple[Path, Union[str, bytes]], None, None]:
         assert format in ("md", "html")
 
-        handled_path_set = set()
+        handled_real_path_set = set()
+        real_files = []
+        page_files = []
 
         for p in self._pages.values():
             page = p["page"]
@@ -98,13 +100,16 @@ class Site:
                         export_file_path = join_path(self.file_type_path_mapping[file["type"]], file_path)
                     else:
                         export_file_path = join_path(page_path, file_path)
-                    export_file_path = relative_path(export_file_path, page_path)
+
+                    if not export_file_path.startswith("/"):
+                        export_file_path = "/" + export_file_path
+                    #export_file_path = relative_path(export_file_path, page_path)
 
                     if file_path != export_file_path:
                         page_link_mapping[file_path] = export_file_path
 
-                    if real_file_path not in handled_path_set:
-                        handled_path_set.add(real_file_path)
+                    if real_file_path not in handled_real_path_set:
+                        handled_real_path_set.add(real_file_path)
 
                         if not real_file_path.exists():
                             raise IOError(
@@ -117,9 +122,9 @@ class Site:
             filename = f"{page.slug}.{format}"
             if page_path:
                 filename = join_path(page_path, filename)
+            if not filename.startswith("/"):
+                filename = "/" + filename
 
             content = getattr(page, f"to_{format}")(link_mapping=page_link_mapping)
 
             yield Path(filename), content
-
-

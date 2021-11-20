@@ -16,13 +16,11 @@ class Writer:
         self._check_filename_and_content(filename, content)
         raise NotImplementedError
 
-    def _check_filename_and_content(self, filename: Union[str, Path], content: Union[str, bytes]):
-        filename = Path(filename)
-        if filename.is_absolute():
-            raise ValueError(
-                f"Absolute filenames are not supported by {self.__class__.__name__}: '{filename}'"
-            )
+    def full_filename(self, filename: Union[str, Path]) -> Path:
+        filename = str(filename).lstrip("/")
+        return self.root / filename
 
+    def _check_filename_and_content(self, filename: Union[str, Path], content: Union[str, bytes]):
         if not isinstance(content, (str, bytes)):
             raise TypeError(
                 f"{self.__class__.__name__} expected str or bytes, got '{type(content).__name__}' for '{filename}'"
@@ -38,7 +36,7 @@ class FileWriter(Writer):
     def write(self, filename: Union[str, Path], content: Union[str, bytes]):
         self._check_filename_and_content(filename, content)
 
-        full_name = self.root / filename
+        full_name = self.full_filename(filename)
         full_path = full_name.parent
         os.makedirs(full_path, exist_ok=True)
 
@@ -59,5 +57,5 @@ class MemoryWriter(FileWriter):
     def write(self, filename: Union[str, Path], content: Union[str, bytes]):
         self._check_filename_and_content(filename, content)
 
-        full_name = self.root / filename
+        full_name = self.full_filename(filename)
         self.files[full_name] = content

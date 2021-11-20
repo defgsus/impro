@@ -5,6 +5,7 @@ from typing import List, Type, Union, Optional
 
 from impro.pages.page import Page
 from impro.site import Site
+from impro.server import run_server
 
 
 def parse_args() -> dict:
@@ -12,7 +13,7 @@ def parse_args() -> dict:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "command", type=str,
-        choices=["info", "site-info", "render"],
+        choices=["info", "site-info", "render", "serve"],
         help="Action",
     )
     parser.add_argument(
@@ -84,6 +85,14 @@ def main(
         print("  files:")
         for filename, content in site.iter_files(format):
             print(f'    {len(content):9d} {filename}')
+
+    elif command == "serve":
+        site = Site()
+        for filename in input:
+            page = Page.from_file(filename)
+            site.add_page(page, path="docs")
+
+        run_server(site)
 
     else:
         raise ValueError(f"Unknown command '{command}'")
